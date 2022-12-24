@@ -42,7 +42,7 @@ class Main:
                     if board.tiles[clicked_row][clicked_col].has_piece():
                         piece = board.tiles[clicked_row][clicked_col].piece #Get the piece on the tile clicked
                         if piece.color == game.next_player: #Check if the piece color can move this turn (if it's white or black turn)
-                            board.possible_moves(piece, clicked_row, clicked_col) #Get all the piece possible moves
+                            board.possible_moves(piece, clicked_row, clicked_col, checked=False) #Get all the piece possible moves
                             dragger.save_initial(event.pos) #Save the piece initial position
                             dragger.drag_piece(piece) #Set the piece in "dragging" mode
                             game.show_background(screen) #Display the board
