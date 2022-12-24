@@ -56,7 +56,7 @@ class Board:
             else:
                 steps = 2
             
-            #Vertical moves
+            ##Vertical moves
             start = row + piece.direction #Current position with pawn direction
             end = row + (piece.direction * (1 + steps)) #Maximum position (2 forward if it hasn't move yet else 1)
             for move_row in range(start, end, piece.direction):
@@ -77,7 +77,7 @@ class Board:
                 else:
                     break
             
-            #Diagonal moves
+            ##Diagonal moves
             move_row = row + piece.direction
             move_cols = [
                 col - 1,
@@ -96,7 +96,47 @@ class Board:
                             if not self.in_check(piece, move): #Check if the move does not lead to a check situation
                                 piece.add_move(move) #Add it to the list
                         else:
-                                piece.add_move(move) #Add it to the list                           
+                                piece.add_move(move) #Add it to the list  
+                                
+            ##En passant moves
+            if piece.color == 'white':
+                initial_pawn_row = 3
+                final_pawn_row = 2
+            else:
+                initial_pawn_row = 4
+                final_pawn_row = 5
+                
+            #Left en passant
+            if Tile.in_range(col - 1) and row == initial_pawn_row: #Check if the left tile of the pawn is inside the board and if the pawn is in the fourth row
+                if self.tiles[row][col - 1].has_hostile_piece(piece.color): #Check if the pawn has an oponent piece at his left
+                    enemy = self.tiles[row][col - 1].piece #Get the enemy piece
+                    if isinstance(enemy, Pawn): #Check if the enemy is a pawn
+                        if enemy.en_passant: #Check if the enemy just moved 2 tiles
+                            initial_tile = Tile(row, col) #Get initial tile
+                            final_tile = Tile(final_pawn_row, col - 1, enemy) #Get final tile
+                            move = Move(initial_tile, final_tile) #Create the new move
+                            
+                            if not checked: #Check if the move has already been checked
+                                if not self.in_check(piece, move): #Check if the move does not lead to a check situation
+                                    piece.add_move(move) #Add the pawn move to its list
+                            else:
+                                piece.add_move(move) #Add the pawn move to its list
+                                
+            #Right en passant
+            if Tile.in_range(col + 1) and row == initial_pawn_row: #Check if the left tile of the pawn is inside the board and if the pawn is in the fourth row
+                if self.tiles[row][col + 1].has_hostile_piece(piece.color): #Check if the pawn has an oponent piece at his left
+                    enemy = self.tiles[row][col + 1].piece #Get the enemy piece
+                    if isinstance(enemy, Pawn): #Check if the enemy is a pawn
+                        if enemy.en_passant: #Check if the enemy just moved 2 tiles
+                            initial_tile = Tile(row, col) #Get initial tile
+                            final_tile = Tile(final_pawn_row, col + 1, enemy) #Get final tile
+                            move = Move(initial_tile, final_tile) #Create the new move
+                            
+                            if not checked: #Check if the move has already been checked
+                                if not self.in_check(piece, move): #Check if the move does not lead to a check situation
+                                    piece.add_move(move) #Add the pawn move to its list
+                            else:
+                                piece.add_move(move) #Add the pawn move to its list
         
         def knight_moves():
             #Defining all knight possible moves
@@ -242,23 +282,19 @@ class Board:
                                 initial_tile = Tile(row, 0) #Set the rook initial tile
                                 final_tile = Tile(row, 3) #Set the rook destination tile
                                 rook_move = Move(initial_tile, final_tile) #Create the new move
-                                left_rook.add_move(rook_move) #Add the rook move to its list
                                 
                                 ###King move
                                 initial_tile = Tile(row, col) #Set the king initial tile
                                 final_tile = Tile(row, 2) #Set the king destination tile
                                 king_move = Move(initial_tile, final_tile) #Create the new move
-                                piece.add_move(king_move) #Add the king move to its list
                                 
-                                # if not checked: #Check if the move has already been checked
-                                #     if not self.in_check(piece, king_move) and not self.in_check(left_rook, rook_move): #Check if the moves does not lead to a check situation
-                                #         piece.add_move(king_move) #Add the king move to its list
-                                #         left_rook.add_move(rook_move) #Add the rook move to its list
-                                #     else:
-                                #         print("left rook in check")
-                                # else:
-                                #     piece.add_move(king_move) #Add it to the list
-                                #     left_rook.add_move(rook_move) #Add the rook move to its list 
+                                if not checked: #Check if the move has already been checked
+                                    if not self.in_check(piece, king_move) and not self.in_check(left_rook, rook_move): #Check if the moves does not lead to a check situation
+                                        piece.add_move(king_move) #Add the king move to its list
+                                        left_rook.add_move(rook_move) #Add the rook move to its list
+                                else:
+                                    piece.add_move(king_move) #Add it to the list
+                                    left_rook.add_move(rook_move) #Add the rook move to its list 
                                 
                 ##King castling
                 right_rook = self.tiles[row][7].piece #Get the piece on the far right of the king
@@ -275,30 +311,19 @@ class Board:
                                 initial_tile = Tile(row, 7) #Set the rook initial tile
                                 final_tile = Tile(row, 5) #Set the rook destination tile
                                 rook_move = Move(initial_tile, final_tile) #Create the new move
-                                right_rook.add_move(rook_move) #Add the rook move to its list
                                 
                                 ###King move
                                 initial_tile = Tile(row, col) #Set the king initial tile
                                 final_tile = Tile(row, 6) #Set the king destination tile
                                 king_move = Move(initial_tile, final_tile) #Create the new move
-                                piece.add_move(king_move) #Add the king move to its list
-                                
-                                # check_move1 = Tile(row, col+ 1)
-                                # check_move2 = Tile(row, col + 2)
-                                # print(checked)
-                                # if not checked: #Check if the move has already been checked
-                                #     print("right never checked")
-                                #     if not self.in_check(piece, check_move1) and not self.in_check(piece, check_move2): #Check if the moves does not lead to a check situation
-                                #         print("right rook in NOT check")
-                                #         piece.add_move(king_move) #Add the king move to its list
-                                #         right_rook.add_move(rook_move) #Add the rook move to its list
-                                #     else:
-                                #         print("right rook in check")
-                                # else:
-                                #     print("right rook already checked")
-                                #     piece.add_move(king_move) #Add it to the list
-                                #     print((rook_move.final_tile.row, rook_move.final_tile.col))
-                                #     right_rook.add_move(rook_move) #Add the rook move to its list
+                               
+                                if not checked: #Check if the move has already been checked
+                                    if not self.in_check(piece, king_move) and not self.in_check(right_rook, rook_move): #Check if the moves does not lead to a check situation
+                                        piece.add_move(king_move) #Add the king move to its list
+                                        right_rook.add_move(rook_move) #Add the rook move to its list
+                                else:
+                                    piece.add_move(king_move) #Add it to the list
+                                    right_rook.add_move(rook_move) #Add the rook move to its list
         
         if isinstance(piece, Pawn):
             pawn_moves()
@@ -337,24 +362,31 @@ class Board:
         elif isinstance(piece, King):
             king_moves()
     
-    def move(self, piece, move):
+    def move(self, piece, move, testing=False):
         """
         Moving a piece on the board
         """
         initial_tile = move.initial_tile
         final_tile = move.final_tile
         
+        empty_en_passant = self.tiles[final_tile.col][final_tile.row].is_empty()
+        
         self.tiles[initial_tile.col][initial_tile.row].piece = None #Clear the initial tile
         self.tiles[final_tile.col][final_tile.row].piece = piece #Set the piece on his destination tile
         
-        ##Pawn promotion
         if isinstance(piece, Pawn): #Check if the piece is a pawn
+            ##Pawn promotion
             self.check_promotion(piece, final_tile) #Promote the pawn to Queen
+            
+            ##Pawn en passant
+            difference = final_tile.row - initial_tile.row
+            if difference != 0 and empty_en_passant: #Check if the pawn captured an enemy pawn (diagonal move) and if the tile is empty
+                self.tiles[initial_tile.col][initial_tile.row + difference].piece = None #Clear the initial tile
+                self.tiles[final_tile.col][final_tile.row].piece = piece #Set the piece on his destination tile
             
         ##King and Queen castling
         if isinstance(piece, King): #Check if the piece is the king
-            print("i'm a king")
-            if self.castling(initial_tile, final_tile): #Check if we are castling
+            if self.castling(initial_tile, final_tile) and not testing: #Check if we are castling
                 difference = final_tile.row - initial_tile.row #Check which castling is done (king or queen castling)
                 if difference < 0:
                     rook = piece.left_rook
@@ -392,7 +424,7 @@ class Board:
         """
         temp_board = copy.deepcopy(self) #Create a temporary copy of the board
         temp_piece = copy.deepcopy(piece) #Create a temporary copy of the piece
-        temp_board.move(temp_piece, move) #Move the piece
+        temp_board.move(temp_piece, move, testing=True) #Move the piece
         
         for row in range(ROWS):
             for col in range(COLS):
@@ -403,3 +435,17 @@ class Board:
                         if isinstance(possible_move.final_tile.piece, King): #Check if there is the oponent king on the final tile
                             return True #Return that there is a check situation
         return False #Return that there is no check situation
+    
+    def set_en_passant(self, piece):
+        """
+        Enable the en passant attribut
+        """
+        if not isinstance(piece, Pawn): #Check if the piece is not a Pawn
+            return
+        
+        for row in range(ROWS):
+            for col in range(COLS):
+                if isinstance(self.tiles[row][col].piece, Pawn):
+                    self.tiles[row][col].piece.en_passant = False
+        
+        piece.en_passant = True

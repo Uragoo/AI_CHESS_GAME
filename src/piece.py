@@ -41,6 +41,7 @@ class Pawn(Piece):
             self.direction = 1
         else:
             self.direction = -1
+        self.en_passant = False
         super().__init__('pawn', color, 1.0)
 
 class Knight(Piece):

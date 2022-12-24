@@ -71,6 +71,7 @@ class Main:
                         
                         if board.valid_move(dragger.piece, move): #Check if the move is valid
                             board.move(dragger.piece, move) #Move the piece in the board
+                            board.set_en_passant(dragger.piece) #Enable the en passant attribut
                             game.show_last_move(screen) #Display the last move
                             game.show_background(screen) #Display the board
                             game.show_pieces(screen) #Display the pieces
