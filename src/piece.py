@@ -1,16 +1,17 @@
 import math
 import os
+from const import *
 
 class Piece:
     def __init__(self, name, color, value, texture=None, texture_rect=None):
         self.name = name
         self.color = color
 
-        if color == 'black':
-            value_sign = -1
-        else:
-            value_sign = 1
-        self.value = value * value_sign
+        # if color == 'black':
+        #     value_sign = -1
+        # else:
+        #     value_sign = 1
+        self.value = value #* value_sign
         self.moves = []
         self.moved = False
         self.texture = texture
@@ -64,4 +65,4 @@ class King(Piece):
     def __init__(self, color):
         self.left_rook = None
         self.right_rook = None
-        super().__init__('king', color, math.inf)
+        super().__init__('king', color, CHECKMATE)

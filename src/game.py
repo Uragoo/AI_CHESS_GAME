@@ -4,6 +4,7 @@ from board import Board
 from dragger import Dragger
 from config import Config
 from tile import Tile
+import sys
 
 class Game:
     def __init__(self):
@@ -113,3 +114,10 @@ class Game:
             
     def reset(self):
         self.__init__()
+        
+    def game_over(self):
+        if self.board.get_all_valid_moves(self) == None: #If a player has no valid moves, he loses the game (checkmate)
+            print("Game Over !")
+            print("white wins !") if self.next_player == 'black' else print("black wins !")
+            pygame.quit()
+            sys.exit()

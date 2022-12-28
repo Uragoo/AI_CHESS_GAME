@@ -13,6 +13,7 @@ class Board:
         self._create()
         self._add_pieces('black')
         self._add_pieces('white')
+        self.score = 0
 
     def _create(self):
         """
@@ -341,6 +342,8 @@ class Board:
                                     piece.add_move(king_move) #Add it to the list
                                     right_rook.add_move(rook_move) #Add the rook move to its list
         
+        piece.moves = []
+        
         if isinstance(piece, Pawn):
             pawn_moves()
         
@@ -388,7 +391,10 @@ class Board:
         empty_en_passant = self.tiles[final_tile.col][final_tile.row].is_empty()
         
         self.tiles[initial_tile.col][initial_tile.row].piece = None #Clear the initial tile
-        self.tiles[final_tile.col][final_tile.row].piece = piece #Set the piece on his destination tile
+        destination_tile = self.tiles[final_tile.col][final_tile.row]
+        if destination_tile.has_hostile_piece(piece.color): #Check if a piece is being captured
+            self.score += destination_tile.piece.value if piece.color == 'white' else -destination_tile.piece.value #Update the game score depending on the piece being captured
+        destination_tile.piece = piece #Set the piece on his destination tile
         
         if isinstance(piece, Pawn): #Check if the piece is a pawn
             ##Pawn promotion
@@ -414,7 +420,7 @@ class Board:
         piece.moved = True #Set the piece in the "already moved" state
         piece.clear_moves() #Clear the list of possible moves as the piece position has changed
         self.last_move = move #Saving the move as the last piece move
-            
+              
     def valid_move(self, piece, move):
         """
         return all possible moves of the piece in the current position
@@ -437,8 +443,11 @@ class Board:
         """
         Promote pawn that reached his opponent backline
         """
-        if final_tile.col == 0 or final_tile.col == 7: #Check if the pawn is on either one of the backlines
-            self.tiles[final_tile.col][final_tile.row].piece = Queen(piece.color) #Replace the pawn by a new Queen
+        if final_tile.row == 0 or final_tile.row == 7: #Check if the pawn is on either one of the backlines
+            piece = self.tiles[final_tile.col][final_tile.row].piece
+            pawn_value = piece.value
+            piece = Queen(piece.color) #Replace the pawn by a new Queen
+            self.score += piece.value - pawn_value if piece.color == 'white' else -(piece.value - pawn_value) #Update the game score
     
     def castling(self, initial_tile, final_tile):
         """
@@ -479,13 +488,19 @@ class Board:
         piece.en_passant = True
         
     def ai_random_move(self, valid_moves):
+        """
+        Return a random move among all possible moves of the current state of the game
+        """
         return valid_moves[random.randint(0, len(valid_moves) - 1)]    
     
-    def ai_best_move(self, depth, game, is_maximizing):
-        
+    def ai_best_minimax_move(self, depth, game, is_maximizing):
+        """
+        Returns the optimal move in the current game state
+        This function is also the first iteration of the minimax algorithm (calls the recursive "minimax" function)
+        """
         print("The AI is thinking...")
-        valid_moves = self.get_all_valid_moves(game)
         board = copy.deepcopy(self)
+        valid_moves = board.get_all_valid_moves(game)
         optimal_move = None
         
         if valid_moves == None:
@@ -497,7 +512,7 @@ class Board:
                 piece = copy.deepcopy(self.tiles[move.initial_tile.col][move.initial_tile.row].piece)
                 if piece != None:
                     board.move(piece, move)
-                    value = max(max_value, self.minimax(depth - 1, board, game, -CHECKMATE, CHECKMATE, not is_maximizing))
+                    value = board.minimax(depth - 1, game, -CHECKMATE, CHECKMATE, not is_maximizing)
                     if value > max_value:
                         max_value = value
                         optimal_move = move
@@ -512,7 +527,7 @@ class Board:
                 piece = copy.deepcopy(self.tiles[move.initial_tile.col][move.initial_tile.row].piece)
                 if piece != None:
                     board.move(piece, move)
-                    value = min(min_value, board.minimax(depth - 1, board, game, -CHECKMATE, CHECKMATE, not is_maximizing))
+                    value = board.minimax(depth - 1, game, -CHECKMATE, CHECKMATE, not is_maximizing)
                     if value < min_value:
                         min_value = value
                         optimal_move = move
@@ -522,14 +537,14 @@ class Board:
                         # print((optimal_move.initial_tile.row, optimal_move.initial_tile.col), (optimal_move.final_tile.row, optimal_move.final_tile.col))
             return optimal_move
         
-    def minimax(self, depth, board, game, alpha, beta, is_maximizing):
+    def minimax(self, depth, game, alpha, beta, is_maximizing):
         """
-        Returns the optimal move in the current situation
+        Recursive function that returns the optimal move in the current situation
         """
         if depth == 0:
-            return board.evaluate_board()
+            return self.evaluate_board()
         
-        valid_moves = board.get_all_valid_moves(game)
+        valid_moves = self.get_all_valid_moves(game)
         if is_maximizing:
             if valid_moves == None:
                 return -CHECKMATE
@@ -537,10 +552,15 @@ class Board:
             for move in valid_moves:
                 piece = self.tiles[move.initial_tile.col][move.initial_tile.row].piece
                 if piece != None:
-                    board.move(piece, move)
-                    value = max(max_value, board.minimax(depth - 1, board, game, alpha, beta, False))
+                    self.move(piece, move)
+                    value = max(max_value, self.minimax(depth - 1, game, alpha, beta, False))
                     if value > max_value:
                         max_value = value
+                        
+                    if max_value > alpha: #Pruning
+                        alpha = max_value
+                    if alpha >= beta:
+                        break
             return max_value
         else:
             if valid_moves == None:
@@ -549,21 +569,105 @@ class Board:
             for move in valid_moves:
                 piece = self.tiles[move.initial_tile.col][move.initial_tile.row].piece
                 if piece != None:
-                    board.move(piece, move)
-                    value = min(min_value, board.minimax(depth - 1, board, game, alpha, beta, True))
+                    self.move(piece, move)
+                    value = min(min_value, self.minimax(depth - 1, game, alpha, beta, True))
                     if value < min_value:
                         min_value = value
+                        
+                    if min_value < beta: #Pruning
+                        beta = min_value
+                    if beta >= alpha:
+                        break
             return min_value
+
+    def ai_best_negamax_move(self, game):
+        """
+        Returns the optimal move in the current game state
+        This function is also the first iteration of the negamax algorithm (calls the recursive "negamax" function)
+        """
+        print("The AI is thinking...")
+        # global optimal_move
+        # global count
+        # count = 0
+        # board = copy.deepcopy(self)
+        # valid_moves = board.get_all_valid_moves(game)
+        # optimal_move = None
+        # board.negamax(valid_moves, DEPTH, game, -CHECKMATE, CHECKMATE, 1 if game.next_player == 'white' else -1)
+        # print("iteration = " + str(count))
+        global count
+        count = 0
+        board = copy.deepcopy(self)
+        valid_moves = board.get_all_valid_moves(game)
+        optimal_move = None
+        if valid_moves == None:
+            return None
+        max_value = -CHECKMATE
         
+        for move in valid_moves:
+            piece = copy.deepcopy(self.tiles[move.initial_tile.col][move.initial_tile.row].piece)
+            if piece != None:
+                board.move(piece, move)
+                valid_moves = board.get_all_valid_moves(game)
+                value = board.negamax(valid_moves, DEPTH - 1, game, -CHECKMATE, CHECKMATE, 1 if game.next_player == 'white' else -1)
+                if value > max_value:
+                    max_value = value
+                    optimal_move = move
+                    print("new optimal move")
+                    print("max value =")
+                    print(max_value)
+                    print((optimal_move.initial_tile.row, optimal_move.initial_tile.col), (optimal_move.final_tile.row, optimal_move.final_tile.col))
+        print("iteration =" + str(count))
+        return optimal_move
+
+    def negamax(self, valid_moves, depth, game, alpha, beta, turn_multiplier):
+        """
+        Recursive function that combines the two parts of the minimax algorithm (combines the maximizing and the minimizing parts in one)
+        """
+        global optimal_move
+        global count
+        count += 1
+        # print("DEPTH = " + str(depth))
+        # print("iteration = " + str(count))
+        if depth == 0:
+            return self.evaluate_board()
+        
+        max_value = -CHECKMATE
+        for move in valid_moves:
+            piece = self.tiles[move.initial_tile.col][move.initial_tile.row].piece
+            if piece != None:
+                self.move(piece, move)
+                valid_moves = self.get_all_valid_moves(game)
+            value = -self.negamax(valid_moves, depth - 1, game, -beta, -alpha, -turn_multiplier)
+            if value > max_value:
+                max_value = value
+                # print("new max value")
+                # print(max_value)
+                # if depth == DEPTH:
+                #     optimal_move = move
+            
+            if max_value > alpha: #Pruning
+                alpha = max_value
+                # print("new pruning")
+                # print(alpha)
+            if alpha >= beta:
+                # print("breaking from tree")
+                break
+        return max_value
         
     def evaluate_board(self):
         """
-        Evaluate the board state : returns a positive value if white has more material, a negative value if black does
+        Evaluate the board state : returns a positive value if white is in advance and a negative one if black is
+        The score depend on the positions of the pieces and the material advantage
         """
         score = 0
         for row in range(ROWS):
             for col in range(COLS):
                 piece = self.tiles[row][col].piece
                 if piece != None:
-                    score += piece.value
+                    position_score = 0
+                    if isinstance(piece, Knight):
+                        position_score = piece_position_score["N"][row][col]
+                    score += piece.value + position_score if piece.color == 'white' else -(piece.value + position_score)
+        print("SCORE =")
+        print(score)
         return score
