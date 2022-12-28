@@ -4,7 +4,6 @@ from const import *
 from game import Game
 from tile import Tile
 from move import Move
-import time
 
 class Main:
 
@@ -33,6 +32,7 @@ class Main:
             
             #Determine whether it's a human or an AI turn
             human_turn = (game.next_player == 'white' and white_player) or (game.next_player == 'black' and black_player)            
+            ai_vs_ai = not white_player and not black_player
             
             for event in pygame.event.get():
                 #Event handler
@@ -41,6 +41,14 @@ class Main:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        board.undo_move()
+                        game.next_player = 'black' if game.next_player == 'white' else 'white'
+                        game.show_background(screen) #Display the board
+                        game.show_last_move(screen) #Display the previous move
+                        game.show_possible_moves(screen) #Display possible moves of the piece being dragged
+                        game.show_pieces(screen) #Display pieces on the board
                     
                 if human_turn: #Check if a human play this turn
                     if event.type == pygame.MOUSEBUTTONDOWN: #Check if the player press the mouse
@@ -75,8 +83,10 @@ class Main:
                             released_col = dragger.mouseX // SQSIZE
                             
                             initial_tile = Tile(dragger.initial_row, dragger.initial_col)
+                            moved_piece = board.tiles[dragger.initial_row][dragger.initial_col].piece
                             final_tile = Tile(released_row, released_col)
-                            move = Move(initial_tile, final_tile) #Create the new move
+                            captured_piece = board.tiles[released_row][released_col].piece
+                            move = Move(initial_tile, final_tile, moved_piece, captured_piece) #Create the new move
                             
                             if board.valid_move(dragger.piece, move): #Check if the move is valid
                                 board.move(dragger.piece, move) #Move the piece in the board
@@ -85,7 +95,6 @@ class Main:
                                 game.show_background(screen) #Display the board
                                 game.show_pieces(screen) #Display the pieces
                                 game.next_turn() #Switch the active player turn
-                                # game.game_over() #Check if it is game over
                                 
                         dragger.undrag_piece() #Disable the piece "dragging" mode
                     
@@ -98,12 +107,10 @@ class Main:
                             board = self.game.board
                             dragger = self.game.dragger
                 
-                else: #If it's an AI turn
-                    # if event.type == pygame.KEYDOWN:
-                    #     if event.key == pygame.K_RIGHT:
+                elif ai_vs_ai:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RIGHT:
                             ai_move = board.ai_best_negamax_move(game) #Get the best move in the current state of the game
-                            print("AI move")
-                            print((ai_move.initial_tile.row, ai_move.initial_tile.col), (ai_move.final_tile.row, ai_move.final_tile.col))
                             piece = board.tiles[ai_move.initial_tile.col][ai_move.initial_tile.row].piece #Get the piece related to the move
                             board.move(piece, ai_move) #Move the piece on the board
                             board.set_en_passant(piece) #Enable the "en passant" attribut
@@ -111,6 +118,16 @@ class Main:
                             game.show_background(screen) #Display the board
                             game.show_pieces(screen) #Display the pieces
                             game.next_turn() #Set the next player to the opposite color : black if white and white if black
+                                
+                elif not human_turn: #If it's an AI turn
+                    ai_move = board.ai_best_negamax_move(game) #Get the best move in the current state of the game
+                    piece = board.tiles[ai_move.initial_tile.col][ai_move.initial_tile.row].piece #Get the piece related to the move
+                    board.move(piece, ai_move) #Move the piece on the board
+                    board.set_en_passant(piece) #Enable the "en passant" attribut
+                    game.show_last_move(screen) #Display the last move
+                    game.show_background(screen) #Display the board
+                    game.show_pieces(screen) #Display the pieces
+                    game.next_turn() #Set the next player to the opposite color : black if white and white if black
                 
             pygame.display.update() #Update the game window display
 main = Main()

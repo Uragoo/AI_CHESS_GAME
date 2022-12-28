@@ -43,6 +43,8 @@ class Pawn(Piece):
         else:
             self.direction = -1
         self.en_passant = False
+        self.did_en_passant = False
+        self.did_en_passant_move = []
         super().__init__('pawn', color, 1.0)
 
 class Knight(Piece):
@@ -59,10 +61,14 @@ class Rook(Piece):
 
 class Queen(Piece):
     def __init__(self, color):
+        self.promoted = False
+        self.promotion_move = []
         super().__init__('queen', color, 9.0)
 
 class King(Piece):
     def __init__(self, color):
         self.left_rook = None
         self.right_rook = None
+        self.castled = False
+        self.castling_move = []
         super().__init__('king', color, CHECKMATE)

@@ -13,7 +13,7 @@ class Board:
         self._create()
         self._add_pieces('black')
         self._add_pieces('white')
-        self.score = 0
+        self.move_log = []
 
     def _create(self):
         """
@@ -73,7 +73,7 @@ class Board:
                     if self.tiles[move_row][col].is_empty(): #Check if the tile is empty
                         initial_tile = Tile(row, col)
                         final_tile = Tile(move_row, col)
-                        move = Move(initial_tile, final_tile) #Create the new possible move
+                        move = Move(initial_tile, final_tile, piece) #Create the new possible move
                         
                         if not checked: #Check if the move has already been checked
                             if not self.in_check(piece, move): #Check if the move does not lead to a check situation
@@ -99,7 +99,7 @@ class Board:
                         initial_tile = Tile(row, col)
                         final_piece = self.tiles[move_row][move_col].piece
                         final_tile = Tile(move_row, move_col, final_piece)
-                        move = Move(initial_tile, final_tile) #Create the new possible move
+                        move = Move(initial_tile, final_tile, piece, self.tiles[move_row][move_col].piece) #Create the new possible move
                         
                         if not checked: #Check if the move has already been checked
                             if not self.in_check(piece, move): #Check if the move does not lead to a check situation
@@ -123,7 +123,7 @@ class Board:
                         if enemy.en_passant: #Check if the enemy just moved 2 tiles
                             initial_tile = Tile(row, col) #Get initial tile
                             final_tile = Tile(final_pawn_row, col - 1, enemy) #Get final tile
-                            move = Move(initial_tile, final_tile) #Create the new move
+                            move = Move(initial_tile, final_tile, piece, enemy) #Create the new move
                             
                             if not checked: #Check if the move has already been checked
                                 if not self.in_check(piece, move): #Check if the move does not lead to a check situation
@@ -139,7 +139,7 @@ class Board:
                         if enemy.en_passant: #Check if the enemy just moved 2 tiles
                             initial_tile = Tile(row, col) #Get initial tile
                             final_tile = Tile(final_pawn_row, col + 1, enemy) #Get final tile
-                            move = Move(initial_tile, final_tile) #Create the new move
+                            move = Move(initial_tile, final_tile, piece, enemy) #Create the new move
                             
                             if not checked: #Check if the move has already been checked
                                 if not self.in_check(piece, move): #Check if the move does not lead to a check situation
@@ -170,7 +170,7 @@ class Board:
                         initial_tile = Tile(row, col)
                         final_piece = self.tiles[move_row][move_col].piece
                         final_tile = Tile(move_row, move_col, final_piece)
-                        move = Move(initial_tile, final_tile) #Create the new possible move
+                        move = Move(initial_tile, final_tile, piece, final_piece) #Create the new possible move
                         if not checked: #Check if the move has already been checked
                             if not self.in_check(piece, move): #Check if the move does not lead to a check situation
                                 piece.add_move(move) #Add it to the list
@@ -178,38 +178,6 @@ class Board:
                                 break #If moving the knight lead to a check situation, it will be the case for all its possible moves, so we break here
                         else:
                                 piece.add_move(move) #Add it to the list            
-        
-            #Defining all bishop moves
-            moves = [
-                (row + 1, col + 1),
-                (row + 2, col + 2),
-                (row + 3, col + 3),
-                (row + 4, col + 4),
-                (row + 5, col + 5),
-                (row + 6, col + 6),
-                (row + 7, col + 7),
-                (row - 1, col - 1),
-                (row - 2, col - 2),
-                (row - 3, col - 3),
-                (row - 4, col - 4),
-                (row - 5, col - 5),
-                (row - 6, col - 6),
-                (row - 7, col - 7),
-                (row + 1, col - 1),
-                (row + 2, col - 2),
-                (row + 3, col - 3),
-                (row + 4, col - 4),
-                (row + 5, col - 5),
-                (row + 6, col - 6),
-                (row + 7, col - 7),
-                (row - 1, col + 1),
-                (row - 2, col + 2),
-                (row - 3, col + 3),
-                (row - 4, col + 4),
-                (row - 5, col + 5),
-                (row - 6, col + 6),
-                (row - 7, col + 7),
-            ]
         
         def line_moves(increments):
             """
@@ -223,9 +191,9 @@ class Board:
                 while True:
                     if Tile.in_range(move_row, move_col): #Check if the move is inside the board
                         initial_tile = Tile(row, col)
-                        final_piece = self.tiles[move_row][move_col].piece
-                        final_tile = Tile(move_row, move_col, final_piece)
-                        move = Move(initial_tile, final_tile) #Create new possible move
+                        enemy = self.tiles[move_row][move_col].piece
+                        final_tile = Tile(move_row, move_col, piece)
+                        move = Move(initial_tile, final_tile, piece, enemy) #Create new possible move
                         
                         if self.tiles[move_row][move_col].is_empty():
                             if not checked: #Check if the move has already been checked
@@ -272,8 +240,9 @@ class Board:
                 if Tile.in_range(move_row, move_col): #Check if the move is inside the board
                     if self.tiles[move_row][move_col].is_empty_or_hostile(piece.color): #Check if the tile is empty or contains an enemy piece
                         initial_tile = Tile(row, col)
+                        enemy = self.tiles[move_row][move_col].piece
                         final_tile = Tile(move_row, move_col)
-                        move = Move(initial_tile, final_tile) #Create de new possible move
+                        move = Move(initial_tile, final_tile, piece, enemy) #Create de new possible move
                         
                         if not checked: #Check if the move has already been checked
                             if not self.in_check(piece, move): #Check if the move does not lead to a check situation
@@ -298,12 +267,12 @@ class Board:
                                 ###Rook move
                                 initial_tile = Tile(row, 0) #Set the rook initial tile
                                 final_tile = Tile(row, 3) #Set the rook destination tile
-                                rook_move = Move(initial_tile, final_tile) #Create the new move
+                                rook_move = Move(initial_tile, final_tile, left_rook) #Create the new move
                                 
                                 ###King move
                                 initial_tile = Tile(row, col) #Set the king initial tile
                                 final_tile = Tile(row, 2) #Set the king destination tile
-                                king_move = Move(initial_tile, final_tile) #Create the new move
+                                king_move = Move(initial_tile, final_tile, piece) #Create the new move
                                 
                                 if not checked: #Check if the move has already been checked
                                     if not self.in_check(piece, king_move) and not self.in_check(left_rook, rook_move): #Check if the moves does not lead to a check situation
@@ -327,12 +296,12 @@ class Board:
                                 ###Rook move
                                 initial_tile = Tile(row, 7) #Set the rook initial tile
                                 final_tile = Tile(row, 5) #Set the rook destination tile
-                                rook_move = Move(initial_tile, final_tile) #Create the new move
+                                rook_move = Move(initial_tile, final_tile, right_rook) #Create the new move
                                 
                                 ###King move
                                 initial_tile = Tile(row, col) #Set the king initial tile
                                 final_tile = Tile(row, 6) #Set the king destination tile
-                                king_move = Move(initial_tile, final_tile) #Create the new move
+                                king_move = Move(initial_tile, final_tile, piece) #Create the new move
                                
                                 if not checked: #Check if the move has already been checked
                                     if not self.in_check(piece, king_move) and not self.in_check(right_rook, rook_move): #Check if the moves does not lead to a check situation
@@ -392,19 +361,22 @@ class Board:
         
         self.tiles[initial_tile.col][initial_tile.row].piece = None #Clear the initial tile
         destination_tile = self.tiles[final_tile.col][final_tile.row]
-        if destination_tile.has_hostile_piece(piece.color): #Check if a piece is being captured
-            self.score += destination_tile.piece.value if piece.color == 'white' else -destination_tile.piece.value #Update the game score depending on the piece being captured
         destination_tile.piece = piece #Set the piece on his destination tile
+        self.move_log.append(move)
         
         if isinstance(piece, Pawn): #Check if the piece is a pawn
             ##Pawn promotion
-            self.pawn_promotion(piece, final_tile) #Promote the pawn to Queen
+            self.pawn_promotion(piece, move) #Promote the pawn to Queen
             
             ##Pawn en passant
             difference = final_tile.row - initial_tile.row
             if difference != 0 and empty_en_passant: #Check if the pawn captured an enemy pawn (diagonal move) and if the tile is empty
+                destination_tile = self.tiles[initial_tile.col][initial_tile.row + difference].piece
+                move.captured_piece = destination_tile
                 self.tiles[initial_tile.col][initial_tile.row + difference].piece = None #Clear the initial tile
                 self.tiles[final_tile.col][final_tile.row].piece = piece #Set the piece on his destination tile
+                piece.did_en_passant = True
+                piece.did_en_passant_move = move
             
         ##King and Queen castling
         if isinstance(piece, King): #Check if the piece is the king
@@ -416,11 +388,43 @@ class Board:
                     rook = piece.right_rook
                 rook_move = rook.moves[-1]
                 self.move(rook, rook_move) #Move the rook with its last possible move (that we just added to the list on the king_moves() function)
+                self.move_log.append(move)
         
         piece.moved = True #Set the piece in the "already moved" state
+        piece.castled = True
+        piece.castling_move = move
         piece.clear_moves() #Clear the list of possible moves as the piece position has changed
         self.last_move = move #Saving the move as the last piece move
               
+    def undo_move(self):
+        if len(self.move_log) != 0: #Check if there is a last move
+            move = self.move_log.pop() #Get the last move and delete it from the list
+            moved_piece = move.moved_piece
+            captured_piece = move.captured_piece
+            #Reverse the move
+            self.tiles[move.initial_tile.col][move.initial_tile.row].piece = moved_piece
+            moved_piece.moved = False
+            if isinstance(moved_piece, Queen): #Check if the piece is a Queen
+                if moved_piece.promoted: #Check if the Queen is a promoted Pawn
+                    if move == moved_piece.promotion_move:
+                        self.tiles[move.initial_tile.col][move.initial_tile.row].piece = Pawn(moved_piece.color) #Cancel the pawn promotion
+            
+            self.tiles[move.final_tile.col][move.final_tile.row].piece = captured_piece
+            
+            if isinstance(moved_piece, King): #Check if the piece is a Rook
+                if moved_piece.castled: #Check if the rook was castled
+                    if move == moved_piece.castling_move:
+                        self.undo_move()
+                        moved_piece.castled = False
+                        moved_piece.castling_move = []
+            elif isinstance(moved_piece, Pawn):
+                if moved_piece.did_en_passant:
+                    if moved_piece.did_en_passant_move == move:
+                        difference =  move.initial_tile.row - move.final_tile.row
+                        # self.tiles[move.final_tile.col][move.initial_tile.row - difference].piece = captured_piece
+                        moved_piece.did_en_passant = False
+                        moved_piece.did_en_passant_move = []
+    
     def valid_move(self, piece, move):
         """
         return all possible moves of the piece in the current position
@@ -439,15 +443,15 @@ class Board:
                              valid_moves.append(move)
         return valid_moves
     
-    def pawn_promotion(self, piece, final_tile):
+    def pawn_promotion(self, piece, move):
         """
         Promote pawn that reached his opponent backline
         """
-        if final_tile.row == 0 or final_tile.row == 7: #Check if the pawn is on either one of the backlines
-            piece = self.tiles[final_tile.col][final_tile.row].piece
-            pawn_value = piece.value
-            piece = Queen(piece.color) #Replace the pawn by a new Queen
-            self.score += piece.value - pawn_value if piece.color == 'white' else -(piece.value - pawn_value) #Update the game score
+        if move.final_tile.col == 0 or move.final_tile.col == 7: #Check if the pawn is on either one of the backlines
+            self.tiles[move.final_tile.col][move.final_tile.row].piece = Queen(piece.color) #Replace the pawn by a new Queen
+            piece = self.tiles[move.final_tile.col][move.final_tile.row].piece
+            piece.promoted = True
+            piece.promotion_move = move
     
     def castling(self, initial_tile, final_tile):
         """
@@ -497,6 +501,7 @@ class Board:
         """
         Returns the optimal move in the current game state
         This function is also the first iteration of the minimax algorithm (calls the recursive "minimax" function)
+        Replaced by "ai_best_negamax_move" function
         """
         print("The AI is thinking...")
         board = copy.deepcopy(self)
@@ -516,10 +521,6 @@ class Board:
                     if value > max_value:
                         max_value = value
                         optimal_move = move
-                        print("new optimal move")
-                        print("max value =")
-                        print(max_value)
-                        print((optimal_move.initial_tile.row, optimal_move.initial_tile.col), (optimal_move.final_tile.row, optimal_move.final_tile.col))
             return optimal_move
         else:
             min_value = CHECKMATE
@@ -531,15 +532,12 @@ class Board:
                     if value < min_value:
                         min_value = value
                         optimal_move = move
-                        # print("new optimal move")
-                        # print("min value =")
-                        # print(min_value)
-                        # print((optimal_move.initial_tile.row, optimal_move.initial_tile.col), (optimal_move.final_tile.row, optimal_move.final_tile.col))
             return optimal_move
         
     def minimax(self, depth, game, alpha, beta, is_maximizing):
         """
         Recursive function that returns the optimal move in the current situation
+        Replaced by "negamax" function
         """
         if depth == 0:
             return self.evaluate_board()
@@ -586,37 +584,14 @@ class Board:
         This function is also the first iteration of the negamax algorithm (calls the recursive "negamax" function)
         """
         print("The AI is thinking...")
-        # global optimal_move
-        # global count
-        # count = 0
-        # board = copy.deepcopy(self)
-        # valid_moves = board.get_all_valid_moves(game)
-        # optimal_move = None
-        # board.negamax(valid_moves, DEPTH, game, -CHECKMATE, CHECKMATE, 1 if game.next_player == 'white' else -1)
-        # print("iteration = " + str(count))
+        global optimal_move
         global count
         count = 0
         board = copy.deepcopy(self)
         valid_moves = board.get_all_valid_moves(game)
         optimal_move = None
-        if valid_moves == None:
-            return None
-        max_value = -CHECKMATE
-        
-        for move in valid_moves:
-            piece = copy.deepcopy(self.tiles[move.initial_tile.col][move.initial_tile.row].piece)
-            if piece != None:
-                board.move(piece, move)
-                valid_moves = board.get_all_valid_moves(game)
-                value = board.negamax(valid_moves, DEPTH - 1, game, -CHECKMATE, CHECKMATE, 1 if game.next_player == 'white' else -1)
-                if value > max_value:
-                    max_value = value
-                    optimal_move = move
-                    print("new optimal move")
-                    print("max value =")
-                    print(max_value)
-                    print((optimal_move.initial_tile.row, optimal_move.initial_tile.col), (optimal_move.final_tile.row, optimal_move.final_tile.col))
-        print("iteration =" + str(count))
+        board.negamax(valid_moves, DEPTH, game, -CHECKMATE, CHECKMATE, 1 if game.next_player == 'white' else -1)
+        print("iteration = " + str(count))
         return optimal_move
 
     def negamax(self, valid_moves, depth, game, alpha, beta, turn_multiplier):
@@ -626,10 +601,8 @@ class Board:
         global optimal_move
         global count
         count += 1
-        # print("DEPTH = " + str(depth))
-        # print("iteration = " + str(count))
         if depth == 0:
-            return self.evaluate_board()
+            return self.evaluate_board() * turn_multiplier
         
         max_value = -CHECKMATE
         for move in valid_moves:
@@ -637,21 +610,18 @@ class Board:
             if piece != None:
                 self.move(piece, move)
                 valid_moves = self.get_all_valid_moves(game)
-            value = -self.negamax(valid_moves, depth - 1, game, -beta, -alpha, -turn_multiplier)
-            if value > max_value:
-                max_value = value
-                # print("new max value")
-                # print(max_value)
-                # if depth == DEPTH:
-                #     optimal_move = move
-            
-            if max_value > alpha: #Pruning
-                alpha = max_value
-                # print("new pruning")
-                # print(alpha)
-            if alpha >= beta:
-                # print("breaking from tree")
-                break
+                value = -self.negamax(valid_moves, depth - 1, game, -beta, -alpha, -turn_multiplier)
+
+                if value > max_value:
+                    max_value = value
+                    if depth == DEPTH:
+                        optimal_move = move
+                self.undo_move()
+                if max_value > alpha: #Pruning
+                    alpha = max_value
+
+                if alpha >= beta:
+                    break
         return max_value
         
     def evaluate_board(self):
@@ -659,15 +629,77 @@ class Board:
         Evaluate the board state : returns a positive value if white is in advance and a negative one if black is
         The score depend on the positions of the pieces and the material advantage
         """
+        # A piece with more move choices will be prefered as others:
+        # | wR wN wB wQ wK wB wN wR |
+        # | wP wP wP wP wP wP wP wP |
+        # | __ __ __ __ __ __ __ __ |
+        # | __ __ __ __ __ __ __ __ |
+        # | __ __ __ __ __ __ __ __ |
+        # | __ __ __ __ __ P1 __ P2 | P1 is prefered because he has more possible moves for next turns
+        # | bP bP bP bP bP bP bP bP |
+        # | bR bN bB bQ bK bB __ bR |
+
         score = 0
         for row in range(ROWS):
             for col in range(COLS):
                 piece = self.tiles[row][col].piece
                 if piece != None:
+                    color = piece.color
                     position_score = 0
+                    #To improve the AI, we will weight the score based on the position of the pieces
                     if isinstance(piece, Knight):
                         position_score = piece_position_score["N"][row][col]
-                    score += piece.value + position_score if piece.color == 'white' else -(piece.value + position_score)
-        print("SCORE =")
-        print(score)
+                    elif isinstance(piece, Bishop):
+                        position_score = piece_position_score["B"][row][col]
+                    elif isinstance(piece, Queen):
+                        position_score = piece_position_score["Q"][row][col]
+                    elif isinstance(piece, Rook):
+                        position_score = piece_position_score["R"][row][col]
+                    elif isinstance(piece, Pawn):
+                        position_score = piece_position_score["wP"][row][col] if color == 'white' else piece_position_score["bP"][row][col]
+                    
+                    if color == 'white':
+                        score += piece.value + position_score * .3
+                    else:
+                        score -= piece.value + position_score * .3
         return score
+    
+    def print_board(self):
+        """
+        Print the board in the console (for debug purpose)
+        """
+        for row in range(ROWS):
+            pcol = "| "
+            for col in range(COLS):
+                piece = self.tiles[row][col].piece
+                if piece == None:
+                    pcol += "__ "
+                elif piece.color == 'white':
+                    if isinstance(piece, Pawn):
+                        pcol += "wP "
+                    elif isinstance(piece, Bishop):
+                        pcol += "wB "
+                    elif isinstance(piece, Knight):
+                        pcol += "wN "
+                    elif isinstance(piece, Rook):
+                        pcol += "wR "
+                    elif isinstance(piece, Queen):
+                        pcol += "wQ "
+                    elif isinstance(piece, King):
+                        pcol += "wK "
+                else:
+                    if isinstance(piece, Pawn):
+                        pcol += "bP "
+                    elif isinstance(piece, Bishop):
+                        pcol += "bB "
+                    elif isinstance(piece, Knight):
+                        pcol += "bN "
+                    elif isinstance(piece, Rook):
+                        pcol += "bR "
+                    elif isinstance(piece, Queen):
+                        pcol += "bQ "
+                    elif isinstance(piece, King):
+                        pcol += "bK "
+            pcol += "|"
+            print(pcol)
+        print("\n\n")
