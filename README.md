@@ -25,4 +25,4 @@ Known issues :
 
 End words :
 * Working on the project was really fun : trying to recreate a classic game such as chess was hard but also very rewarding.
-* We hope you will find our work as satisfying as we worked hard on thi
+* We hope you will find our work as satisfying as we worked hard on this
