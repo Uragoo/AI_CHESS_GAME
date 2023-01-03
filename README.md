@@ -3,7 +3,7 @@
 
 * Entry point is main.py
 * Press 'r' to reset the game
-* Press the right arrow to undo moves
+* Press the left arrow to undo moves
 * By default, the game is in Player vs AI mode, we didn't have the time to create a menu so if you want to change this mode, you can just modify the boolean variable in main.py on line 22 and 23
 * If you play in AI vs AI mode, please press the right arrow for each turn
 
@@ -19,8 +19,8 @@ Improvement ideas :
 - Improve the scoring system of the game to make the AI smarter like giving more weight to tiles threatening the most enemies or defending the most allies
 
 Known issues :
-- Some issues with checks => the king sometimes behave like he is in a check situation wile it's not the case
-- The AI is relatively slow given the combination number in the game. With more time, we would have try to implement new way of saving AI calculations to reuse them istead of recalculate every moves
+- Some issues with checks => the king sometimes behave like he is in a check situation while it's not the case
+- The AI is relatively slow given the combination number in the game. With more time, we would have try to implement new way of saving AI calculations to reuse them instead of recalculate every moves
 - The AI is also not the smartest
 
 End words :
